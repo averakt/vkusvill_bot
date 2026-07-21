@@ -8,10 +8,11 @@ BASE_DIR = Path(__file__).parent
 CACHE_FILE = BASE_DIR / "llm_cache.json"
 MODEL = "deepseek-chat"
 
-client = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
-    base_url="https://api.deepseek.com",
-)
+def _get_client() -> OpenAI:
+    return OpenAI(
+        api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
+        base_url="https://api.deepseek.com",
+    )
 
 SYSTEM_PROMPT = (
     "Ты — помощник по русской кухне. "
@@ -47,7 +48,7 @@ def resolve_via_llm(dish: str) -> list[dict] | None:
         return cache[key]
 
     try:
-        resp = client.chat.completions.create(
+        resp = _get_client().chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
