@@ -21,6 +21,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command
 
 from resolver import resolve
+from llm_resolver import resolve_via_llm
 from vkusvill import VkusVillClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -108,6 +109,17 @@ async def cmd_cart(message: types.Message):
     await message.answer("https://vkusvill.ru/cart/")
 
 
+async def resolve_dish(name: str) -> tuple[list[str] | None, bool]:
+    """Try local recipes first, then LLM. Returns (ingredients_list, from_llm)."""
+    resolved = await asyncio.to_thread(resolve, name)
+    if resolved:
+        return resolved, False
+    llm_result = await asyncio.to_thread(resolve_via_llm, name)
+    if llm_result:
+        return [item["name"] for item in llm_result], True
+    return None, False
+
+
 async def search_and_add(client: VkusVillClient, item: str) -> str:
     try:
         product = await client.search_product(item)
@@ -147,12 +159,19 @@ async def handle_message(message: types.Message):
 
     if lowered.startswith("блюдо "):
         dish = text[6:].strip()
-        resolved = await asyncio.to_thread(resolve, dish)
+        resolved, from_llm = await resolve_dish(dish)
         if not resolved:
-            await message.answer(f"Блюдо «{dish}» не найдено в рецептах")
+            if os.environ.get("DEEPSEEK_API_KEY"):
+                await message.answer(f"Не удалось найти рецепт для «{dish}»")
+            else:
+                await message.answer(
+                    f"Блюдо «{dish}» не найдено в рецептах.\n"
+                    "Подсказка: задай DEEPSEEK_API_KEY для поиска через LLM"
+                )
             return
+        label = "Через LLM" if from_llm else "Из рецептов"
         await message.answer(
-            f"«{dish}» \u2192 {len(resolved)} ингредиентов:\n"
+            f"«{dish}» \u2192 {len(resolved)} ингредиентов ({label}):\n"
             + "\n".join(f"\u2022 {i}" for i in resolved)
             + "\n\nИщу и добавляю..."
         )
@@ -179,10 +198,11 @@ async def handle_message(message: types.Message):
             await client.close()
         return
 
-    resolved = await asyncio.to_thread(resolve, text)
+    resolved, from_llm = await resolve_dish(text)
     if resolved:
+        label = "Через LLM" if from_llm else "Из рецептов"
         await message.answer(
-            f"«{text}» \u2192 {len(resolved)} ингредиентов:\n"
+            f"«{text}» \u2192 {len(resolved)} ингредиентов ({label}):\n"
             + "\n".join(f"\u2022 {i}" for i in resolved)
             + "\n\nИщу и добавляю..."
         )
