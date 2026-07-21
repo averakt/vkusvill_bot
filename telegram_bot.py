@@ -39,11 +39,59 @@ if not TOKEN:
     print("VKUSVILL_BOT_TOKEN не задан. Создай .env или установи переменную окружения.")
     sys.exit(1)
 
+ALLOWED_USERS: set[int] = set()
+allowed_raw = os.environ.get("ALLOWED_USERS", "")
+if allowed_raw:
+    for part in allowed_raw.split(","):
+        part = part.strip()
+        if part.isdigit():
+            ALLOWED_USERS.add(int(part))
+allowed_file = BASE_DIR / "allowed_users.txt"
+if allowed_file.exists():
+    for line in allowed_file.read_text().strip().splitlines():
+        line = line.strip()
+        if line.isdigit():
+            ALLOWED_USERS.add(int(line))
+
+ALLOWLIST_FILE = BASE_DIR / "allowed_users.txt"
+
 dp = Dispatcher()
+
+
+def load_allowlist() -> set[int]:
+    users: set[int] = set()
+    raw = os.environ.get("ALLOWED_USERS", "")
+    if raw:
+        for part in raw.split(","):
+            part = part.strip()
+            if part.isdigit():
+                users.add(int(part))
+    if ALLOWLIST_FILE.exists():
+        for line in ALLOWLIST_FILE.read_text().strip().splitlines():
+            line = line.strip()
+            if line.isdigit():
+                users.add(int(line))
+    return users
+
+
+ALLOWED_USERS = load_allowlist()
+
+
+def is_allowed(user_id: int) -> bool:
+    return not ALLOWED_USERS or user_id in ALLOWED_USERS
+
+
+async def check_access(message: types.Message) -> bool:
+    if not is_allowed(message.from_user.id):
+        await message.answer("Доступ запрещён")
+        return False
+    return True
 
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
+    if not await check_access(message):
+        return
     await message.answer(
         "Привет! Я бот для ВкусВилла.\n\n"
         "Команды:\n"
@@ -55,6 +103,8 @@ async def cmd_start(message: types.Message):
 
 @dp.message(Command("cart"))
 async def cmd_cart(message: types.Message):
+    if not await check_access(message):
+        return
     await message.answer("https://vkusvill.ru/cart/")
 
 
@@ -84,6 +134,8 @@ async def build_cart_reply(client: VkusVillClient, items: list[str]) -> list[str
 
 @dp.message()
 async def handle_message(message: types.Message):
+    if not await check_access(message):
+        return
     text = message.text.strip()
     if not text:
         return
@@ -160,6 +212,50 @@ async def handle_message(message: types.Message):
         await message.answer("\n".join(reply_lines))
     finally:
         await client.close()
+
+
+@dp.message(Command("myid"))
+async def cmd_myid(message: types.Message):
+    await message.answer(f"Твой Telegram ID: <code>{message.from_user.id}</code>")
+
+
+@dp.message(Command("allow"))
+async def cmd_allow(message: types.Message):
+    if not await check_access(message):
+        return
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2 or not args[1].strip().isdigit():
+        await message.answer("Использование: /allow <telegram_id>")
+        return
+    user_id = int(args[1].strip())
+    ALLOWED_USERS.add(user_id)
+    ALLOWLIST_FILE.parent.mkdir(parents=True, exist_ok=True)
+    current = set()
+    if ALLOWLIST_FILE.exists():
+        for line in ALLOWLIST_FILE.read_text().strip().splitlines():
+            line = line.strip()
+            if line.isdigit():
+                current.add(int(line))
+    current.add(user_id)
+    ALLOWLIST_FILE.write_text("\n".join(str(uid) for uid in sorted(current)) + "\n")
+    await message.answer(f"Пользователь {user_id} добавлен в список доступа")
+
+
+@dp.message(Command("deny"))
+async def cmd_deny(message: types.Message):
+    if not await check_access(message):
+        return
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2 or not args[1].strip().isdigit():
+        await message.answer("Использование: /deny <telegram_id>")
+        return
+    user_id = int(args[1].strip())
+    ALLOWED_USERS.discard(user_id)
+    if ALLOWLIST_FILE.exists():
+        lines = [l for l in ALLOWLIST_FILE.read_text().strip().splitlines()
+                 if l.strip() != str(user_id)]
+        ALLOWLIST_FILE.write_text("\n".join(lines) + "\n" if lines else "")
+    await message.answer(f"Пользователь {user_id} удалён из списка доступа")
 
 
 async def main():
