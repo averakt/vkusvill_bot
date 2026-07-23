@@ -22,6 +22,30 @@ pip install -r requirements.txt
 python3 telegram_bot.py
 ```
 
+### Обход VPN для ВкусВилла
+
+Если используется VPN (Телеграм работает через VPN, а ВкусВилл блокирует VPN-IP), нужно вывести трафик к ВкусВиллу напрямую:
+
+```bash
+# Узнать IP MCP API сервера
+host mcp001.vkusvill.ru
+
+# Добавить маршрут через локальный шлюз (замените 192.168.31.1 на ваш)
+sudo route add -host 178.248.238.54 192.168.31.1
+```
+
+Проверить, что маршрут работает:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" https://mcp001.vkusvill.ru/mcp \
+  -X POST -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+# Ожидается: 200
+```
+
+При отключении VPN маршрут становится неактивным, но не мешает.
+
 Переменные окружения (или `.env`):
 - `VKUSVILL_BOT_TOKEN` — токен Telegram бота (обязательно)
 - `DEEPSEEK_API_KEY` — ключ DeepSeek API для поиска рецептов (опционально)
