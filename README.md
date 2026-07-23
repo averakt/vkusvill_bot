@@ -88,7 +88,8 @@ python3 -m pytest tests/ -v
 
 ```
 vkusvill_bot/
-├── telegram_bot.py    # Telegram бот (aiogram)
+├── telegram_bot.py    # Telegram бот — только aiogram-хэндлеры
+├── service.py         # Бизнес-логика (доступ, поиск, корзина, LLM fallback)
 ├── bot.py             # CLI-точка входа
 ├── vkusvill.py        # Клиент MCP API ВкусВилл
 ├── resolver.py        # Резолвер блюд → продукты (локальная база)
