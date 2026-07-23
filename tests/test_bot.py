@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -19,7 +20,7 @@ def mock_client():
 
 @pytest.mark.asyncio
 async def test_search_and_add_found(mock_client):
-    from telegram_bot import search_and_add
+    from service import search_and_add
 
     result = await search_and_add(mock_client, "молоко")
     assert "✓" in result
@@ -30,7 +31,7 @@ async def test_search_and_add_found(mock_client):
 
 @pytest.mark.asyncio
 async def test_search_and_add_not_found(mock_client):
-    from telegram_bot import search_and_add
+    from service import search_and_add
 
     mock_client.search_product.return_value = None
     result = await search_and_add(mock_client, "неттакоготовара")
@@ -40,7 +41,7 @@ async def test_search_and_add_not_found(mock_client):
 
 @pytest.mark.asyncio
 async def test_search_and_add_error(mock_client):
-    from telegram_bot import search_and_add
+    from service import search_and_add
 
     mock_client.search_product.side_effect = Exception("Network error")
     result = await search_and_add(mock_client, "молоко")
@@ -50,7 +51,7 @@ async def test_search_and_add_error(mock_client):
 
 @pytest.mark.asyncio
 async def test_build_cart_reply(mock_client):
-    from telegram_bot import build_cart_reply
+    from service import build_cart_reply
 
     results = await build_cart_reply(mock_client, ["молоко", "хлеб"])
     assert len(results) == 3
@@ -60,7 +61,7 @@ async def test_build_cart_reply(mock_client):
 
 @pytest.mark.asyncio
 async def test_build_cart_reply_all_not_found(mock_client):
-    from telegram_bot import build_cart_reply
+    from service import build_cart_reply
 
     mock_client.search_product.return_value = None
     results = await build_cart_reply(mock_client, ["нет1", "нет2"])
@@ -69,7 +70,7 @@ async def test_build_cart_reply_all_not_found(mock_client):
     assert "Корзина:" in results[-1]
 
 
-@patch("telegram_bot.resolve")
+@patch("service.resolve")
 @pytest.mark.asyncio
 async def test_handle_dish_with_prefix(mock_resolve, mock_client):
     mock_resolve.return_value = ["капуста", "свёкла", "картошка"]
@@ -87,10 +88,12 @@ async def test_handle_dish_with_prefix(mock_resolve, mock_client):
     assert msg.answer.call_count >= 2
 
 
-@patch("telegram_bot.resolve")
+@patch("service.resolve_via_llm")
+@patch("service.resolve")
 @pytest.mark.asyncio
-async def test_handle_dish_not_found(mock_resolve, mock_client):
+async def test_handle_dish_not_found(mock_resolve, mock_llm, mock_client):
     mock_resolve.return_value = None
+    mock_llm.return_value = None
 
     from telegram_bot import handle_message
 
@@ -99,7 +102,7 @@ async def test_handle_dish_not_found(mock_resolve, mock_client):
     msg.answer = AsyncMock()
 
     await handle_message(msg)
-    msg.answer.assert_any_call("Блюдо «несуществующее» не найдено в рецептах")
+    msg.answer.assert_any_call("Не удалось найти рецепт для «несуществующее»")
 
 
 @pytest.mark.asyncio
@@ -140,7 +143,7 @@ async def test_handle_cart(mock_client):
     msg.answer.assert_any_call("https://vkusvill.ru/cart/")
 
 
-@patch("telegram_bot.resolve")
+@patch("service.resolve")
 @pytest.mark.asyncio
 async def test_fallback_dish(mock_resolve, mock_client):
     mock_resolve.return_value = ["капуста", "свёкла"]
@@ -171,7 +174,7 @@ async def test_fallback_comma_separated(mock_client):
     assert mock_client.search_product.await_count == 2
 
 
-@patch("telegram_bot.resolve")
+@patch("service.resolve")
 @pytest.mark.asyncio
 async def test_fallback_single_product(mock_resolve, mock_client):
     mock_resolve.return_value = None
