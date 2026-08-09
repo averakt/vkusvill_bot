@@ -50,6 +50,52 @@ curl -s -o /dev/null -w "%{http_code}" https://mcp001.vkusvill.ru/mcp \
 - `VKUSVILL_BOT_TOKEN` — токен Telegram бота (обязательно)
 - `DEEPSEEK_API_KEY` — ключ DeepSeek API для поиска рецептов (опционально)
 - `ALLOWED_USERS` — Telegram ID через запятую (опционально)
+- `TELEGRAM_PROXY` — прокси только для Telegram (HTTP/SOCKS5), если `api.telegram.org` недоступен (опционально)
+- `DATA_DIR` — директория для изменяемых файлов (`allowed_users.txt`, `llm_cache.json`), по умолчанию — папка проекта
+
+## Docker (рекомендуется для VPS)
+
+Локальный пакет `vvmcp` (из `~/vkusvill_list/vv_mcp`) не опубликован в PyPI, поэтому он заводится в образ через `vendor/`:
+
+```bash
+mkdir -p vendor && cp -r ~/vkusvill_list/vv_mcp vendor/vv_mcp
+```
+
+Создать `.env` (см. `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+Запуск:
+
+```bash
+docker compose up -d --build
+docker compose logs -f bot
+docker compose restart bot   # после обновления кода
+```
+
+Изменяемое состояние (`allowed_users.txt`, `llm_cache.json`) хранится в volume `bot_data` и переживает перезапуски.
+
+### Прокси для Telegram
+
+Если хостинг не отдаёт `api.telegram.org` (типично для РФ), задайте прокси **только для Telegram**:
+
+```bash
+TELEGRAM_PROXY=http://user:pass@proxy-ip:port docker compose up -d --build
+```
+
+Проверка доступности до деплоя:
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" -m 10 https://api.telegram.org
+curl -sS -o /dev/null -w "%{http_code}\n" -m 10 https://mcp001.vkusvill.ru/mcp \
+  -X POST -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+```
+
+Оба `200` — прокси не нужен.
 
 ## Команды бота
 
@@ -67,15 +113,6 @@ curl -s -o /dev/null -w "%{http_code}" https://mcp001.vkusvill.ru/mcp \
 - `борщ` — разложит блюдо на ингредиенты (сначала локальная база, потом LLM)
 - `молоко, хлеб, яйца` — найдёт каждый товар и создаст корзину
 
-## CLI-интерфейс
-
-```bash
-python3 bot.py search "молоко 3.2%"      # поиск товара
-python3 bot.py multy '["молоко","хлеб"]' # несколько товаров + корзина
-python3 bot.py resolve "борщ"            # ингредиенты блюда
-python3 bot.py cart                      # ссылка на корзину
-```
-
 ## Тесты
 
 ```bash
@@ -90,7 +127,6 @@ python3 -m pytest tests/ -v
 vkusvill_bot/
 ├── telegram_bot.py    # Telegram бот — только aiogram-хэндлеры
 ├── service.py         # Бизнес-логика (доступ, поиск, корзина, LLM fallback)
-├── bot.py             # CLI-точка входа
 ├── vkusvill.py        # Клиент MCP API ВкусВилл
 ├── resolver.py        # Резолвер блюд → продукты (локальная база)
 ├── llm_resolver.py    # Резолвер через DeepSeek API (fallback)

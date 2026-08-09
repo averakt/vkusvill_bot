@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+      TELEGRAM_PROXY: ${TELEGRAM_PROXY:-}
+    volumes:
+      - bot_data:/data
+    restart: unless-stopped
+
+volumes:
+  bot_data:

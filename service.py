@@ -1,13 +1,12 @@
 import asyncio
 import os
-from pathlib import Path
 
+from config import DATA_DIR
 from llm_resolver import resolve_via_llm
 from resolver import resolve
 from vkusvill import VkusVillClient
 
-BASE_DIR = Path(__file__).parent
-ALLOWLIST_FILE = BASE_DIR / "allowed_users.txt"
+ALLOWLIST_FILE = DATA_DIR / "allowed_users.txt"
 
 
 def load_allowlist() -> set[int]:

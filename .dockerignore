@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.pytest_cache
+state.json
+bot.log
+tests/
+README.md
+vendor/vv_mcp/.git
+vendor/vv_mcp/__pycache__
+vendor/vv_mcp/src/vvmcp/__pycache__

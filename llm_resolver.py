@@ -4,8 +4,9 @@ from pathlib import Path
 
 from openai import OpenAI
 
-BASE_DIR = Path(__file__).parent
-CACHE_FILE = BASE_DIR / "llm_cache.json"
+from config import DATA_DIR
+
+CACHE_FILE = DATA_DIR / "llm_cache.json"
 MODEL = "deepseek-chat"
 
 def _get_client() -> OpenAI:
