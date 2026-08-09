@@ -193,7 +193,8 @@ async def handle_message(message: types.Message):
 
 
 async def main():
-    session = NoVerifySession()
+    proxy = os.environ.get("TELEGRAM_PROXY") or None
+    session = NoVerifySession(proxy=proxy)
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML), session=session)
     await dp.start_polling(bot, skip_updates=True)
 
