@@ -163,3 +163,7 @@ vkusvill_bot/
 - `vkusvill_products_search` — поиск товаров
 - `vkusvill_product_details` — детальная информация
 - `vkusvill_cart_link_create` — создание корзины
+
+## CI/CD
+
+Тесты (`test`) запускаются на каждом PR; деплой (`deploy` на VPS) — только при push/merge в `main`.
