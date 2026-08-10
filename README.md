@@ -77,6 +77,17 @@ docker compose restart bot   # после обновления кода
 
 Изменяемое состояние (`allowed_users.txt`, `llm_cache.json`) хранится в volume `bot_data` и переживает перезапуски.
 
+### Несколько ботов на одном сервере
+
+Каждый бот — отдельный каталог со своим `.env` и `name:` в compose (изолированные volumes, независимые обновления):
+
+```
+/opt/bots/vkusvill/  →  docker compose up -d --build
+/opt/bots/other/     →  docker compose up -d --build
+```
+
+В `docker-compose.yml` уже заданы лимиты ресурсов (`mem_limit`, `cpus`) и ротация логов.
+
 ### Прокси для Telegram
 
 Если хостинг не отдаёт `api.telegram.org` (типично для РФ), задайте прокси **только для Telegram**:
