@@ -101,7 +101,8 @@ async def test_handle_dish_not_found(mock_resolve, mock_llm, mock_client):
     msg.text = "блюдо несуществующее"
     msg.answer = AsyncMock()
 
-    await handle_message(msg)
+    with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "test-key"}):
+        await handle_message(msg)
     msg.answer.assert_any_call("Не удалось найти рецепт для «несуществующее»")
 
 
