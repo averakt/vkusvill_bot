@@ -6,4 +6,3 @@ state.json
 bot.log
 allowed_users.txt
 llm_cache.json
-vendor/

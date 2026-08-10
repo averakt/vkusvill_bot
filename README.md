@@ -17,8 +17,8 @@ Telegram-бот для поиска товаров и создания корз�
 
 ```bash
 cd ~/vkusvill_bot
-pip install -e ~/vkusvill_list/vv_mcp
 pip install -r requirements.txt
+pip install -e ./vendor/vv_mcp
 python3 telegram_bot.py
 ```
 
@@ -55,11 +55,7 @@ curl -s -o /dev/null -w "%{http_code}" https://mcp001.vkusvill.ru/mcp \
 
 ## Docker (рекомендуется для VPS)
 
-Локальный пакет `vvmcp` (из `~/vkusvill_list/vv_mcp`) не опубликован в PyPI, поэтому он заводится в образ через `vendor/`:
-
-```bash
-mkdir -p vendor && cp -r ~/vkusvill_list/vv_mcp vendor/vv_mcp
-```
+Зависимость `vvmcp` (MCP-клиент ВкусВилла) завёрнута в репозиторий в `vendor/vv_mcp` — отдельный клон не нужен.
 
 Создать `.env` (см. `.env.example`):
 

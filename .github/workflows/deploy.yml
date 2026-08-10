@@ -10,11 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Materialize vendor (private vv_mcp)
-        run: |
-          git clone --depth 1 \
-            https://x-access-token:${{ secrets.VKUSVILL_LIST_TOKEN }}@github.com/averakt/vkusvill_list.git \
-            vendor/vv_mcp && rm -rf vendor/vv_mcp/.git
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
