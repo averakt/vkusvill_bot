@@ -166,4 +166,4 @@ vkusvill_bot/
 
 ## CI/CD
 
-Тесты () запускаются на каждом PR; деплой ( на VPS) — только при push/merge в .
+Тесты (`test`) запускаются на каждом PR; деплой (`deploy` на VPS) — только при push/merge в `main`.
